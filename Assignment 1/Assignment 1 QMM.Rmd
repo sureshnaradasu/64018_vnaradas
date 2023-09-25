@@ -1,0 +1,124 @@
+---
+title: "QMM assignment 1"
+author: "Venkata Suresh Naradasu"
+date: "2023-09-23"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+```
+
+***
+
+This Notebook contains the code for Assignment 1
+
+# Summary
+
+1. Maximum revenue = $1780 by making 40 Artisanal Truffles, 12 Handcrafted Chocolate Nuggets, 4 Premium Gourmet Chocolate Bars per day
+
+Each ingrediant (cacao butter, honey, cream) constraints are binding.
+
+2. Cacao Butter constraint: Shadow price = $2, Range of feasibility = 47.5 to 51.6 cups.
+   Honey constraint: Shadow price = $30, Range of feasibility = 30 to 52 cups.
+   Cream constraint: Shadow price = $6, Range of feasibility = 29 to 50 cups.
+   
+3.If the local store increases the daily order to 25 pounds of chocolate nuggets. Maximum Revenue= $1558 & Each Product that Francesco should produce is 
+    26.6 Artisanal Truffles
+    25 Handcrafted Chocolate
+    0 Premium Gourmet Chocolate Bars
+    
+***
+
+Load lpSolveAPI
+```{r}
+library(lpSolveAPI)
+
+```
+
+***
+**Problem Statement: **
+
+A renowned chocolatier, Francesco Schröeder, makes three kinds of chocolate confectionery: artisanal truffles, handcrafted chocolate nuggets, and premium gourmet chocolate bars. He uses the highest quality of cacao butter, dairy cream, and honey as the main ingredients. Francesco makes his chocolates each morning, and they are usually sold out by the early afternoon. For a pound of artisanal truffles, Francesco uses 1 cup of cacao butter, 1 cup of honey, and 1/2 cup of cream. The handcrafted nuggets are milk chocolate and take 1/2 cup of cacao, 2/3 cup of honey, and 2/3 cup of cream for each pound. Each pound of the chocolate bars uses 1 cup of cacao butter, 1/2 cup of honey, and 1/2 cup of cream. One pound of truffles, nuggets, and chocolate bars can be purchased for $35, $25, and $20, respectively. A local store places a daily order of 10 pounds of chocolate nuggets, which means that Francesco needs to make at least 10 pounds of the chocolate nuggets each day. Before sunrise each day, Francesco receives a delivery of 50 cups of cacao butter, 50 cups of honey, and 30 cups of dairy cream.
+
+1.) Formulate and solve the LP model that maximizes revenue given the constraints. How much of each chocolate product should Francesco make each morning? What is the maximum daily revenue that he can make?
+2.) Report the shadow price and the range of feasibility of each binding constraint.
+3.) If the local store increases the daily order to 25 pounds of chocolate nuggets, how much of each product should Francesco make?
+
+***
+
+We will solve this problem with two approaches by directly encoding the variables and coefficients.
+
+***
+
+We define the following:
+
+* Decision Variables: Let *A* be the number of Pounds of Artisanal Truffles produced, and *H* be the number of Pounds of Handcrafted Chocolate produced and *P* be the number of Pounds of Premium Gourmet Chocolate Bars produced
+* The Objective is to *Max 35A + 25H + 20P*. The constraints are
+  + *cacao butter: 1A + 0.5H + 1P <= 50;*
+  + *Honey: 1A + 2/3H + 0.5P <= 50;*
+  + *Cream: 0.5A + 2/3H + 0.5P <= 25;*
+  + *Local_Store_order: 1H <= 10;*
+  + Non-negativity constraints
+
+
+```{r echo=FALSE, results='hide'}
+
+lprec <- make.lp(0,3)
+set.objfn(lprec, c(35,25,20))
+lp.control(lprec,sense='max')
+add.constraint(lprec, c(1,0.5,1), "<=", 50)
+add.constraint(lprec, c(1,2/3,0.5), "<=", 50)
+add.constraint(lprec, c(0.5,2/3,0.5), "<=", 30)
+add.constraint(lprec, c(0,1,0), ">=", 10)
+
+
+RowNames <- c("cacao_butter", "honey","cream","Local_Store_order")
+ColNames <- c("Artisanal_Truffles", "handcrafted_chocolate_nuggets","chocolate_bars")
+dimnames(lprec) <- list(RowNames, ColNames)
+
+lprec
+
+write.lp(lprec, filename = "Q1.lp", type = "lp")
+
+```
+We now solve the above LP problem
+
+```{r}
+solve(lprec)
+```
+
+0 implies that the model has been successfully solved. Now we need to find the values of the decision variables and maximum revenue
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+varV <- get.variables(lprec)
+```
+The solution shows that the revenue is `r format(round(get.objective(lprec),2))`, with the first variable value equal to `r format(round(varV[1],2))`, and the second variable value equal to `r format(round(varV[2],2))` , and the second variable value equal to `r format(round(varV[3],2))` . 
+
+Now we read the lp file that we have written using "write.lp(lprec, filename = "Q1.lp", type = "lp")" and copy that to the variable x for further using it to get sensitivity values 
+
+
+```{r}
+#setwd("C:\\Users\\sures\\Downloads")
+x <- read.lp("Q1.lp")
+x
+```
+Now we solve the model with copied variable x and get objective maximum values and decision variable again. Since without solving the model with variable "x" we cannot get sensitivity values. 
+
+```{r}
+solve(x)
+get.objective(x)
+get.variables(x)
+get.constraints(x)
+```
+We now get the sensitivity values of objective function and dual problem as well 
+
+```{r}
+get.sensitivity.obj(x)
+get.sensitivity.rhs(x)
+```
+
