@@ -1,0 +1,157 @@
+---
+title: "Inclass QMM 2 October"
+author: "Venkata Suresh Naradasu"
+date: "2023-10-02"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+***
+# Summary
+
+The objective of minimizing the cost of a Transportation problem in Northern Airplane data given. 
+1.) The given data in the question violates the main assumption of the Transportation problem which is demand = supply as the Total of scheduled installations is not equal to total of maximum production
+2.) The decision variables which are derived from the data given are 
+ Decision variables:
+ 
+  xij 
+  In which represents amount produced for month i for the demand of month j
+  
+  i<=j 
+  since we cannot produce something on the previous month 
+
+ Constants:- 
+ Cij = cost associated with each unit of xij
+ 
+As the production of 1st month can be used on the following months as well we add the storage unit cost for the existing unit cost of production if i < j
+For example:-
+
+C11= 1.080 but C12= 1.080 + 0.015 since as we are using the storage for once month and the cost of storage per month is 0.015 units 
+
+Similarly C13= 1.080 + 2(0.015), C14 = 1.080 + 3(0.015) and so on which applies for every single constant where i<j
+
+For i > j we can't do the production on the before month for the existing month, we assume it as M . M should be a large number so that the model ignores the value as it is a minimization problem.I have considered M as 10.
+
+In the given values the supply is not equal to demand so to make this model to work as a transportation model we have to make supply = demand so that is the reason we have created a dummy Demand constraint with the value of 30 and we take the values of that column as zeros as there no price to that. 
+
+Minimum cost of production and storage for four months = 77.3 units
+
+Decision Variables:- 
+
+x11 = 10 
+x12 = 15  
+x13 = 0 
+x14 = 0  
+x15 = 0
+x21 = 0
+x22 = 0
+x23 = 0
+x24 = 5
+x25 = 30  
+x31 = 0
+x32 = 0
+x33 = 25
+x34 = 5
+x35 = 0
+x41 = 0
+x42 = 0
+x43 = 0 
+x44 = 10
+x45 = 0
+
+Supply 1, Shadow price = 1.080, 
+Supply 2, Shadow price = 1.095, 
+Supply 3, Shadow price = 1.070, 
+Supply 4, Shadow price = 1.085,
+
+Demand 1, Shadow price = 0,
+Demand 2, Shadow price = 0.015,
+Demand 3, Shadow price = 0.030,
+Demand 4, Shadow price = 0.045,
+Demand 5, Shadow price = -1.095,
+
+There is no range of feasibility for all these constraints as the change in duals from and till values of constraints can disturb the important assumption of transportation problem which is Supply = Demand.
+
+
+
+***
+Load lpSolveAPI library
+
+```{r}
+library(lpSolveAPI)
+```
+
+***
+**Problem Statement: **
+
+The NORTHERN AIRPLANE COMPANY builds commercial airplanes for various airline companies around the world. The last stage in the production process is to produce the jet
+engines and then to install them (a very fast operation) in the completed airplane frame. The company has been working under some contracts to deliver a considerable number of
+airplanes in the near future, and the production of the jet engines for these planes must now be scheduled for the next four months.
+
+To meet the contracted dates for delivery, the company must supply engines for installation in the quantities indicated in the second column of Table 9.7. Thus, the cumulative number of engines produced by the end of months 1, 2, 3, and 4 must be at least 10, 25, 50, and 70, respectively. The facilities that will be available for producing the engines vary according to other production, maintenance, and renovation work scheduled during this period. The resulting monthly differences in the maximum number that can be produced and the cost (in millions of dollars) of producing each one are given in the third and fourth columns of Table 9.7 (that was shown in class).
+
+
+Because of the variations in production costs, it may well be worthwhile to produce some of the engines a month or more before they are scheduled for installation, and this possibility is being considered. The drawback is that such engines must be stored until the scheduled installation (the airplane frames will not be ready early) at a storage cost of $15,000 per month (including interest on expended capital) for each engine,1 as shown in the rightmost column of Table 9.7.
+
+
+The production manager wants a schedule developed for the number of engines to be produced in each of the four months so that the total of the production and storage costs will be minimized.
+
+Formulate and solve this problem.
+Submit a final pdf knitted file with your recommendations
+
+***
+
+We Solve this problem by writing all the constraints and the objective function in an lp file and then reading the lp file and then running the model.
+
+The objective function and constraints given and mentioned below.
+Where
+  xij = In which represents amount produced for month i for the demand of month j
+  Cij = cost associated with each unit of xij
+
+/* Objective function */
+min: +1.08 x11 +1.095 x12 +1.11 x13 +1.125 x14 +0 x15 +10 x21 +1.11 x22 +1.125 x23 +1.14 x24 +0 x25 +10 x31 +10 x32 +1.1 x33 +1.115 x34 +0 x35 +10 x41 +10 x42 +10 x43 +1.13 x44 +0 x45;
+
+/* Supply constraints  */
+supply1: +x11 +x12 +x13 +x14 +x15 = 25;
+supply2: +x21 +x22 +x23 +x24 +x25 = 35;
+supply3: +x31 +x32 +x33 +x34 +x35 = 30;
+supply4: +x41 +x42 +x43 +x44 +x45 = 10;
+
+/* Demand constraints  */
+demand1: +x11 +x21 +x31 +x41 = 10;
+demand2: +x12 +x22 +x32 +x42 = 15;
+demand3: +x13 +x23 +x33 +x43 = 25;
+demand4: +x14 +x24 +x34 +x44 = 20;
+demand5: +x15 +x25 +x35 +x45 = 30;
+
+***
+
+Now we read the lp file that we have created into a variable, in this scenario x and display how many decsion variables and how many constraints there are in the model
+ 
+```{r}
+setwd("C:\\Users\\sures\\OneDrive\\Documents")
+x <- read.lp("SD1.lp")
+x
+```
+Now as the lp file is imported we solve it through the in built function available in lpSolveAPI library which is solve() and if the output is 0 then the model is successfully complied 
+```{r}
+solve(x)
+```
+As the model is solved now we get what is objective and the decision variables values using functions included in the lpSolveAPI library 
+```{r}
+get.objective(x)
+get.variables(x)
+get.constraints(x)
+```
+Now we find out what is the sensitivity of the objective function and also the decision variables.
+
+```{r}
+get.sensitivity.obj(x)
+get.sensitivity.rhs(x)
+```
+
